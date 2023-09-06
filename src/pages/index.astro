@@ -1,0 +1,22 @@
+---
+import Global from "@/layouts/global.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import Nav from "@/components/nav.astro";
+
+const session = Astro.locals.session;
+---
+
+<Global title="My Pet">
+  {
+    session ? (
+      <Nav />
+    ) : (
+      <div class="h-vh flex items-center justify-center">
+        <a href="/auth/google" class={cn(buttonVariants(), "mt-4")}>
+          Login with Google
+        </a>
+      </div>
+    )
+  }
+</Global>
