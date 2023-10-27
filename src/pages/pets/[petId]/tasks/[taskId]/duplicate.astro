@@ -1,0 +1,54 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+import { createId } from "@/lib/id";
+
+const { taskId, petId } = Astro.params;
+const session = Astro.locals.session;
+
+if (!session || !petId || !taskId) {
+  return Astro.redirect("/");
+}
+
+const [pet] = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(eq(schema.pets.userId, session.user.userId), eq(schema.pets.id, petId)),
+  );
+
+if (!pet) {
+  return Astro.redirect("/");
+}
+
+const [originalTask] = await db
+  .select()
+  .from(schema.tasks)
+  .where(
+    and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.userId, session.user.userId),
+      eq(schema.tasks.petId, petId),
+    ),
+  );
+
+if (!originalTask) {
+  return Astro.redirect("/");
+}
+
+const [task] = await db
+  .insert(schema.tasks)
+  .values({
+    date: originalTask.date,
+    description: originalTask.description + " (copy)",
+    id: createId(),
+    petId,
+    status: "todo",
+    type: originalTask.type,
+    userId: session.user.userId,
+  })
+  .returning();
+
+return Astro.redirect(`/pets/${petId}/tasks/${task.id}`);
+---

@@ -1,0 +1,35 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { PetHistoryComponent } from "./pet-history";
+import { db, schema } from "@/lib/db";
+
+export interface Props {
+  petId: string;
+}
+
+const { petId } = Astro.props;
+const session = Astro.locals.session;
+
+if (!petId || !session) {
+  return null;
+}
+
+const petHistory = await db.query.tasks.findMany({
+  with: {
+    pet: {
+      columns: {
+        name: true,
+        picture: true,
+        id: true,
+      },
+    },
+  },
+  where: and(
+    eq(schema.tasks.userId, session.user.userId),
+    eq(schema.tasks.petId, petId),
+  ),
+});
+---
+
+<PetHistoryComponent data={petHistory} client:idle />

@@ -1,0 +1,103 @@
+---
+import { RotateCcw } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { db, schema } from "@/lib/db";
+import { capitalize } from "@/lib/utils";
+
+import { Label } from "@/components/ui/label";
+
+export const partial = true;
+
+const { taskId, petId } = Astro.params;
+const { type: typeFromProp } = Astro.props;
+const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
+
+const types = [
+  "vet",
+  "medicine",
+  "walk",
+  "grooming",
+  "training",
+  "feeding",
+  "other",
+] as const;
+const typeSchema = z.enum(types);
+
+const typeToSet =
+  Astro.request.method === "POST"
+    ? typeSchema.safeParse((await Astro.request.formData()).get("type"))
+    : null;
+
+const type = await (async () => {
+  if (typeToSet && typeToSet.success) {
+    if (!userId || !taskId || !petId) {
+      return null;
+    }
+    await db
+      .update(schema.tasks)
+      .set({
+        type: typeToSet.data,
+      })
+      .where(
+        and(
+          eq(schema.tasks.id, taskId),
+          eq(schema.tasks.petId, petId),
+          eq(schema.tasks.userId, userId),
+        ),
+      );
+    return typeToSet.data;
+  }
+  if (typeFromProp) {
+    return typeFromProp;
+  }
+  if (!userId || !taskId || !petId) {
+    return null;
+  }
+  const task = await db.query.tasks.findFirst({
+    columns: { type: true },
+    where: and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.petId, petId),
+      eq(schema.tasks.userId, userId),
+    ),
+  });
+
+  return task?.type ?? null;
+})();
+
+if (
+  !Astro.request.headers.has("HX-Request") &&
+  Astro.request.method === "POST"
+) {
+  return new Response(null, {
+    status: 200,
+  });
+}
+---
+
+<Label className="relative block" id="type">
+  <span class="mb-1 block">Type</span>
+  <select
+    name="type"
+    hx-post={`/pets/${petId}/tasks/${taskId}/partials/type`}
+    hx-indicator="#type-indicator"
+    hx-target="#type"
+    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {
+      types.map((typeFromList) => (
+        <option value={typeFromList} selected={type === typeFromList}>
+          {capitalize(typeFromList)}
+        </option>
+      ))
+    }
+  </select>
+  <RotateCcw
+    className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full absolute right-4 top-1/2 mt-0.5"
+    id="type-indicator"
+  >
+    {/* @todo display error message */}
+  </RotateCcw>
+</Label>

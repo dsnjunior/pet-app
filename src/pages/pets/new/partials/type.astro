@@ -1,0 +1,61 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { Button } from "@/components/ui/button";
+
+import { db, schema } from "@/lib/db";
+import { createId } from "@/lib/id";
+
+export const partial = true;
+
+const session = Astro.locals.session;
+
+if (!session) {
+  return Astro.redirect("/");
+}
+
+const alreadyCreatedPets = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(
+      eq(schema.pets.userId, session.user.userId),
+      eq(schema.pets.creating, true),
+    ),
+  );
+
+if (!alreadyCreatedPets?.length) {
+  await db.insert(schema.pets).values({
+    id: createId(),
+    userId: session.user.userId,
+    name: "",
+    type: "cat",
+    breed: "",
+    birthday: "",
+    picture: "",
+    creating: true,
+  });
+}
+---
+
+<h1 class="font-semibold text-4xl">What kind of animal is your pet?</h1>
+<div class="space-y-4 flex flex-col">
+  <form>
+    <input type="hidden" name="type" value="dog" />
+    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
+      🐶 Dog
+    </Button>
+  </form>
+  <form>
+    <input type="hidden" name="type" value="cat" />
+    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
+      😺 Cat
+    </Button>
+  </form>
+  <form>
+    <input type="hidden" name="type" value="bird" />
+    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
+      🐦 Bird
+    </Button>
+  </form>
+</div>

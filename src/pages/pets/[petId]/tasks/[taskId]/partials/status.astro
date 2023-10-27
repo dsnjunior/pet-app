@@ -1,0 +1,87 @@
+---
+import { RotateCcw } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { db, schema } from "@/lib/db";
+import { capitalize } from "@/lib/utils";
+
+import { Label } from "@/components/ui/label";
+
+export const partial = true;
+
+const { taskId, petId } = Astro.params;
+const { status: statusFromProp } = Astro.props;
+const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
+
+const statuses = ["todo", "in_progress", "done", "missed"] as const;
+const statusSchema = z.enum(statuses);
+
+const statusToSet = Astro.request.headers.has("HX-Request")
+  ? statusSchema.safeParse(
+      (await Astro.request.formData()).get("status") as string,
+    )
+  : null;
+
+const status = await (async () => {
+  if (statusToSet && statusToSet.success) {
+    if (!userId || !taskId || !petId) {
+      return null;
+    }
+    await db
+      .update(schema.tasks)
+      .set({
+        status: statusToSet.data,
+      })
+      .where(
+        and(
+          eq(schema.tasks.id, taskId),
+          eq(schema.tasks.petId, petId),
+          eq(schema.tasks.userId, userId),
+        ),
+      );
+    return statusToSet.data;
+  }
+  if (statusFromProp) {
+    return statusFromProp;
+  }
+  if (!userId || !taskId || !petId) {
+    return null;
+  }
+  const task = await db.query.tasks.findFirst({
+    columns: { status: true },
+    where: and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.petId, petId),
+      eq(schema.tasks.userId, userId),
+    ),
+  });
+
+  return task?.status ?? null;
+})();
+---
+
+<Label className="relative block" id="status">
+  <span class="mb-1 block">Status</span>
+  <select
+    name="status"
+    hx-post={`/pets/${petId}/tasks/${taskId}/partials/status`}
+    hx-indicator="#status-indicator"
+    hx-target="#status"
+    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {
+      statuses.map((statusFromList) => (
+        <option value={statusFromList} selected={status === statusFromList}>
+          {capitalize(statusFromList).replace("_", " ")}
+        </option>
+      ))
+    }
+  </select>
+  <RotateCcw
+    className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full absolute right-4 top-1/2 mt-0.5"
+    id="status-indicator"
+  >
+    {/* @todo display error message */}
+  </RotateCcw>
+</Label>

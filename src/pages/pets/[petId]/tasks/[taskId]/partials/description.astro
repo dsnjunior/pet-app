@@ -1,0 +1,84 @@
+---
+import { and, or, eq, like } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RotateCcw } from "lucide-react";
+
+export const partial = true;
+
+const { taskId, petId } = Astro.params;
+const { description: descriptionFromProp } = Astro.props;
+const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
+
+const descriptionToSet =
+  Astro.request.method === "POST"
+    ? (await Astro.request.formData()).get("description")
+    : null;
+
+const description = await (async () => {
+  if (descriptionToSet && typeof descriptionToSet === "string") {
+    if (!userId || !taskId || !petId) {
+      return null;
+    }
+    await db
+      .update(schema.tasks)
+      .set({
+        description: descriptionToSet,
+      })
+      .where(
+        and(
+          eq(schema.tasks.id, taskId),
+          eq(schema.tasks.petId, petId),
+          eq(schema.tasks.userId, userId),
+        ),
+      );
+    return descriptionToSet;
+  }
+  if (descriptionFromProp) {
+    return descriptionFromProp;
+  }
+  if (!userId || !taskId || !petId) {
+    return null;
+  }
+  const task = await db.query.tasks.findFirst({
+    columns: { description: true },
+    where: and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.petId, petId),
+      eq(schema.tasks.userId, userId),
+    ),
+  });
+
+  return task?.description ?? null;
+})();
+
+if (
+  !Astro.request.headers.has("HX-Request") &&
+  Astro.request.method === "POST"
+) {
+  return new Response(null, {
+    status: 200,
+  });
+}
+---
+
+<Label className="relative block" id="description">
+  <span class="mb-1 block">Description</span>
+  <Input
+    name="description"
+    defaultValue={description ?? ""}
+    hx-post={`/pets/${petId}/tasks/${taskId}/partials/description`}
+    hx-trigger="keyup changed delay:500ms"
+    hx-indicator="#description-indicator"
+    hx-target="#description"
+  />
+  <RotateCcw
+    className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full absolute right-4 top-1/2 mt-0.5"
+    id="description-indicator"
+  >
+    {/* @todo display error message */}
+  </RotateCcw>
+</Label>

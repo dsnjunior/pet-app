@@ -1,0 +1,67 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+
+export const partial = true;
+
+const session = Astro.locals.session;
+
+if (!session) {
+  return new Response(null, {
+    status: 401,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const creatingPets = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(
+      eq(schema.pets.userId, session.user.userId),
+      eq(schema.pets.creating, true),
+    ),
+  );
+
+const petBreed = Astro.request.headers.has("HX-Request")
+  ? (await Astro.request.formData()).get("breed")
+  : null;
+
+if (!creatingPets.length || !petBreed) {
+  return new Response(null, {
+    status: 404,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const [pet] = await (async () => {
+  if (
+    petBreed &&
+    typeof petBreed === "string" &&
+    petBreed.length > 0 &&
+    petBreed.length <= 255
+  ) {
+    return await db
+      .update(schema.pets)
+      .set({ breed: petBreed, creating: false })
+      .where(eq(schema.pets.id, creatingPets[0].id))
+      .returning();
+  }
+  return creatingPets;
+})();
+
+return new Response(null, {
+  status: 302,
+  headers: {
+    "HX-Redirect": `/pets/${pet.id}`,
+    Redirect: `/pets/${pet.id}`,
+  },
+});
+---

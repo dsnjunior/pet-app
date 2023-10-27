@@ -25,6 +25,11 @@ interface ImportMetaEnv {
   readonly GOOGLE_CLIENT_ID: string;
   readonly GOOGLE_CLIENT_SECRET: string;
   readonly GOOGLE_REDIRECT_URI: string;
+
+  readonly PUBLIC_CLOUDINARY_CLOUD_NAME: string;
+  readonly PUBLIC_CLOUDINARY_API_KEY: string;
+  readonly PUBLIC_CLOUDINARY_UPLOAD_PRESET: string;
+  readonly CLOUDINARY_API_SECRET: string;
 }
 
 interface ImportMeta {

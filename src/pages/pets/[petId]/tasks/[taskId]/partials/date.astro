@@ -1,0 +1,89 @@
+---
+import { RotateCcw } from "lucide-react";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { db, schema } from "@/lib/db";
+
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+
+export const partial = true;
+
+const { taskId, petId } = Astro.params;
+const { date: dateFromProp, timeZone: timeZoneFromProp } = Astro.props;
+const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
+
+const dateSchema = z.string().datetime();
+
+const formdata = Astro.request.headers.has("HX-Request")
+  ? await Astro.request.formData()
+  : null;
+
+const dateToSet = formdata
+  ? dateSchema.safeParse(formdata.get("date") + ":00Z")
+  : null;
+
+const timeZoneToSet = formdata?.get("timeZone") as string | null;
+
+const [date, timeZone] = await (async () => {
+  if (dateToSet && !dateToSet.success) {
+    console.log(dateToSet.error);
+  }
+  if (dateToSet && dateToSet.success) {
+    if (!userId || !taskId || !petId) {
+      return [null, null];
+    }
+    await db
+      .update(schema.tasks)
+      .set({
+        date: dateToSet.data,
+        timeZone: timeZoneToSet ?? "",
+      })
+      .where(
+        and(
+          eq(schema.tasks.id, taskId),
+          eq(schema.tasks.petId, petId),
+          eq(schema.tasks.userId, userId),
+        ),
+      );
+    return [dateToSet.data, timeZoneToSet];
+  }
+  if (dateFromProp) {
+    return [dateFromProp, timeZoneFromProp];
+  }
+  if (!userId || !taskId || !petId) {
+    return [null, null];
+  }
+  const task = await db.query.tasks.findFirst({
+    columns: { date: true, timeZone: true },
+    where: and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.petId, petId),
+      eq(schema.tasks.userId, userId),
+    ),
+  });
+
+  return [task?.date ?? null, task?.timeZone ?? null];
+})();
+---
+
+<Label className="relative block" id="date">
+  <span class="mb-1 block">When</span>
+  <Input
+    name="date"
+    type="datetime-local"
+    defaultValue={date.replace(":00Z", "")}
+    hx-post={`/pets/${petId}/tasks/${taskId}/partials/date`}
+    hx-trigger="change changed delay:500ms"
+    hx-indicator="#date-indicator"
+    hx-target="#date"
+    hx-on="htmx:configRequest: event.detail.parameters.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone"
+  />
+  <RotateCcw
+    className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full absolute right-8 top-1/2 mt-0.5"
+    id="date-indicator"
+  >
+    {/* @todo display error message */}
+  </RotateCcw>
+</Label>

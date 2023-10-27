@@ -1,0 +1,79 @@
+---
+import { and, eq } from "drizzle-orm";
+import { Plus } from "lucide-react";
+
+import { db, schema } from "@/lib/db";
+import App from "@/layouts/app.astro";
+import { Heading } from "@/components/ui/heading";
+import PetHistory from "@/components/pet-history";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+const { petId } = Astro.params;
+
+if (!petId) {
+  return new Response(null, {
+    status: 400,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const session = Astro.locals.session;
+
+if (!session) {
+  return new Response(null, {
+    status: 401,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const [pet] = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(eq(schema.pets.userId, session.user.userId), eq(schema.pets.id, petId)),
+  );
+
+if (!pet) {
+  return new Response(null, {
+    status: 404,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+---
+
+<App title={pet.name}>
+  <div class="p-4 container">
+    <div class="flex items-center">
+      <Heading
+        title={pet.name}
+        description={`Everithing we know about the ${pet.type} ${pet.name}`}
+      />
+    </div>
+    <ul class="py-4">
+      <li>
+        <strong>Birthday:</strong>
+        {pet.birthday}
+      </li>
+      <li>
+        <strong>Breed:</strong>
+        {pet.breed}
+      </li>
+    </ul>
+
+    <a href={`/pets/${pet.id}/tasks/new`} class={cn(buttonVariants(), "mb-4")}>
+      <Plus className="w-4 h-4 mr-2" /> Add activity
+    </a>
+
+    <PetHistory petId={petId} />
+  </div>
+</App>

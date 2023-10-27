@@ -35,7 +35,7 @@ export const GET: APIRoute = async (context) => {
       attributes: {},
     });
     context.locals.auth.setSession(session);
-    return context.redirect("/", 302);
+    return context.redirect("/app", 302);
   } catch (e) {
     if (e instanceof OAuthRequestError) {
       return new Response(null, {

@@ -1,0 +1,40 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+import { createId } from "@/lib/id";
+
+const { petId } = Astro.params;
+const session = Astro.locals.session;
+
+if (!session || !petId) {
+  return Astro.redirect("/");
+}
+
+const [pet] = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(eq(schema.pets.userId, session.user.userId), eq(schema.pets.id, petId)),
+  );
+
+if (!pet) {
+  return Astro.redirect("/");
+}
+
+const [task] = await db
+  .insert(schema.tasks)
+  .values({
+    date: "",
+    description: "",
+    id: createId(),
+    petId,
+    status: "todo",
+    type: "walk",
+    userId: session.user.userId,
+    timeZone: "",
+  })
+  .returning();
+
+return Astro.redirect(`/pets/${petId}/tasks/${task.id}`);
+---
