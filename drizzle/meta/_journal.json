@@ -8,6 +8,20 @@
       "when": 1694036293323,
       "tag": "0000_worried_susan_delgado",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1694053322376,
+      "tag": "0001_chief_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1698376980075,
+      "tag": "0002_little_warbound",
+      "breakpoints": true
     }
   ]
 }

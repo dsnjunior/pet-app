@@ -1,0 +1,160 @@
+---
+import { z } from "zod";
+import { and, eq } from "drizzle-orm";
+import { Check, RotateCcw } from "lucide-react";
+
+import { Input, inputClasses } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+
+import { capitalize } from "@/lib/utils";
+import { db, schema } from "@/lib/db";
+
+export const partial = true;
+
+const { taskId, petId } = Astro.params;
+const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
+
+const formdata =
+  Astro.request.headers.has("HX-Request") || Astro.request.method === "POST"
+    ? await Astro.request.formData()
+    : null;
+
+const dateSchema = z.string().datetime();
+const dateToSet = formdata
+  ? dateSchema.safeParse(formdata.get("date") + ":00Z")
+  : null;
+
+const timeZoneToSet = formdata?.get("timeZone") as string | null;
+
+const statuses = ["todo", "in_progress", "done", "missed"] as const;
+const statusSchema = z.enum(statuses);
+const statusToSet = formdata
+  ? statusSchema.safeParse(formdata.get("status") as string)
+  : null;
+
+const types = [
+  "vet",
+  "medicine",
+  "walk",
+  "grooming",
+  "training",
+  "feeding",
+  "other",
+] as const;
+const typeSchema = z.enum(types);
+const typeToSet = formdata ? typeSchema.safeParse(formdata.get("type")) : null;
+
+const descriptionToSet = formdata
+  ? (formdata.get("description") as string)
+  : null;
+
+const task = await (async () => {
+  if (!userId || !taskId || !petId) {
+    return null;
+  }
+  if (formdata) {
+    const [task] = await db
+      .update(schema.tasks)
+      .set({
+        date: dateToSet?.success ? dateToSet.data : undefined,
+        timeZone: timeZoneToSet ?? undefined,
+        status: statusToSet?.success ? statusToSet.data : undefined,
+        type: typeToSet?.success ? typeToSet.data : undefined,
+        description: descriptionToSet ?? undefined,
+      })
+      .where(
+        and(
+          eq(schema.tasks.id, taskId),
+          eq(schema.tasks.petId, petId),
+          eq(schema.tasks.userId, userId),
+        ),
+      )
+      .returning();
+
+    return task;
+  }
+  return await db.query.tasks.findFirst({
+    where: and(
+      eq(schema.tasks.id, taskId),
+      eq(schema.tasks.petId, petId),
+      eq(schema.tasks.userId, userId),
+    ),
+  });
+})();
+
+if (!task) {
+  return null;
+}
+
+if (
+  !Astro.request.headers.has("HX-Request") &&
+  Astro.request.method === "POST"
+) {
+  return new Response(null, {
+    status: 200,
+  });
+}
+---
+
+<form
+  class="block m-0 py-4 space-y-4"
+  hx-post={`/pets/${petId}/tasks/${taskId}/partials/form`}
+  hx-indicator="#indicator"
+  hx-on="htmx:configRequest: event.detail.parameters.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone"
+  hx-swap="outerHTML"
+>
+  <Label>
+    <span class="mb-1 block">Description</span>
+    <Input name="description" defaultValue={task.description ?? ""} />
+    {/* @todo display error message */}
+  </Label>
+
+  <div class="grid grid-cols-2 gap-4">
+    <Label>
+      <span class="mb-1 block">Type</span>
+      <select name="type" class={inputClasses}>
+        {
+          types.map((typeFromList) => (
+            <option value={typeFromList} selected={task.type === typeFromList}>
+              {capitalize(typeFromList)}
+            </option>
+          ))
+        }
+      </select>
+    </Label>
+    <Label>
+      <span class="mb-1 block">Status</span>
+      <select name="status" class={inputClasses}>
+        {
+          statuses.map((statusFromList) => (
+            <option
+              value={statusFromList}
+              selected={task.status === statusFromList}
+            >
+              {capitalize(statusFromList).replace("_", " ")}
+            </option>
+          ))
+        }
+      </select>
+    </Label>
+  </div>
+
+  <Label className="relative block" id="date">
+    <span class="mb-1 block">When</span>
+    <Input
+      name="date"
+      type="datetime-local"
+      defaultValue={task.date.replace(":00Z", "")}
+    />
+    {/* @todo display error message */}
+  </Label>
+
+  <div class="flex items-center">
+    <Button><Check className="w-4 h-4 mr-2" /> Done</Button>
+    <RotateCcw
+      className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full ml-4"
+      id="indicator"
+    />
+  </div>
+</form>

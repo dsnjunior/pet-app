@@ -1,0 +1,73 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+export const partial = true;
+
+const session = Astro.locals.session;
+
+if (!session) {
+  return new Response(null, {
+    status: 401,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const creatingPets = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(
+      eq(schema.pets.userId, session.user.userId),
+      eq(schema.pets.creating, true),
+    ),
+  );
+
+if (!creatingPets.length) {
+  return new Response(null, {
+    status: 404,
+    headers: {
+      "HX-Redirect": "/",
+      Redirect: "/",
+    },
+  });
+}
+
+const petType = Astro.request.headers.has("HX-Request")
+  ? (await Astro.request.formData()).get("type")
+  : null;
+
+const [pet] = await (async () => {
+  if (
+    petType &&
+    typeof petType === "string" &&
+    ["dog", "cat", "bird"].includes(petType)
+  ) {
+    return await db
+      .update(schema.pets)
+      .set({ type: petType as "dog" | "cat" | "bird" })
+      .where(eq(schema.pets.id, creatingPets[0].id))
+      .returning();
+  }
+  return creatingPets;
+})();
+
+Astro.response.headers.set("HX-Replace-Url", "/pets/new/name");
+---
+
+<Label className="space-y-8">
+  <div class="font-semibold text-4xl">
+    Cool! What is the name of the {pet.type}?
+  </div>
+  <Input
+    hx-post="/pets/new/partials/birthday"
+    placeholder={`${pet.type}'s name`}
+    name="name"
+  />
+</Label>

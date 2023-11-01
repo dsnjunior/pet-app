@@ -1,0 +1,59 @@
+---
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { capitalize } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
+import { Calendar, Edit } from "lucide-react";
+import { TaskDate } from "./task-date";
+
+export interface Props {
+  task: {
+    id: string;
+    type: string;
+    description: string;
+    date: string;
+    timeZone: string;
+    pet: {
+      name: string;
+      id: string;
+    };
+  };
+}
+
+const { task } = Astro.props;
+---
+
+<Card>
+  <CardHeader>
+    <CardTitle>{capitalize(task.type)} - {task.pet.name}</CardTitle>
+    <CardDescription>{task.description}</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <ul>
+      {
+        task.date && (
+          <li class="flex items-center text-sm font-semibold">
+            <Calendar className="w-4 h-4 mr-2" />
+            <span class="sr-only">When: </span>
+            <TaskDate date={task.date} timeZone={task.timeZone} client:idle />
+          </li>
+        )
+      }
+    </ul>
+  </CardContent>
+  <CardFooter>
+    <a
+      class={buttonVariants({ size: "sm", variant: "secondary" })}
+      href={`/pets/${task.pet.id}/tasks/${task.id}`}
+    >
+      <Edit className="w-4 h-4 mr-2" />
+       Manage task
+    </a>
+  </CardFooter>
+</Card>

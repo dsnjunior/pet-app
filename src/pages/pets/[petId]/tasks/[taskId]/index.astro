@@ -1,0 +1,94 @@
+---
+import { and, eq } from "drizzle-orm";
+import { ArrowLeft, Check, Copy, Trash } from "lucide-react";
+
+import App from "@/layouts/app.astro";
+import { Heading } from "@/components/ui/heading";
+
+import { db, schema } from "@/lib/db";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+import Form from "./partials/form.astro";
+
+const { taskId, petId } = Astro.params;
+const session = Astro.locals.session;
+
+if (!session || !taskId || !petId) {
+  return Astro.redirect("/");
+}
+
+const [pet] = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(eq(schema.pets.userId, session.user.userId), eq(schema.pets.id, petId)),
+  );
+
+if (!pet) {
+  return Astro.redirect("/");
+}
+
+if (Astro.request.method === "DELETE") {
+  await db
+    .delete(schema.tasks)
+    .where(
+      and(
+        eq(schema.tasks.id, taskId),
+        eq(schema.tasks.userId, session.user.userId),
+        eq(schema.tasks.petId, petId),
+      ),
+    );
+
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "HX-Redirect": `/pets/${pet.id}`,
+      Redirect: `/pets/${pet.id}`,
+    },
+  });
+}
+---
+
+<App title={pet.name}>
+  <div class="p-4 container">
+    <div>
+      <a
+        href={`/pets/${pet.id}`}
+        class={cn(
+          buttonVariants({ size: "sm", variant: "link" }),
+          "-ml-4 mb-4",
+        )}
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+      </a>
+      <div class="flex justify-between">
+        <Heading
+          title={`${pet.name}'s task`}
+          description={`Lets update the ${pet.name}'s task #${taskId.substring(
+            0,
+            8,
+          )}`}
+        />
+        <div class="space-x-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            hx-delete={`/pets/${pet.id}/tasks/${taskId}`}
+          >
+            <Trash className="w-4 h-4 mr-2" /> Delete task
+          </Button>
+          <a
+            href={`/pets/${pet.id}/tasks/${taskId}/duplicate`}
+            class={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <Copy className="w-4 h-4 mr-2" /> Duplicate task
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="py-4">
+      <Form userId={session.user.userId} />
+    </div>
+  </div>
+</App>

@@ -1,0 +1,23 @@
+---
+import Global from "@/layouts/global.astro";
+
+import Type from "./partials/type.astro";
+import Name from "./partials/name.astro";
+import Birthday from "./partials/birthday.astro";
+import Breed from "./partials/breed.astro";
+
+const { step } = Astro.params;
+---
+
+<Global title="Tell us about your pet">
+  <div
+    class="flex flex-col space-y-8 items-center justify-center min-h-vh pb-4"
+    hx-swap="innerHTML"
+    hx-target="this"
+  >
+    {step === "name" && <Name />}
+    {step === "birthday" && <Birthday />}
+    {step === "breed" && <Breed />}
+    {(!step || step === "type") && <Type />}
+  </div>
+</Global>

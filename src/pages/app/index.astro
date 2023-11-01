@@ -1,0 +1,72 @@
+---
+import { db, schema } from "@/lib/db";
+import { and, eq, gte } from "drizzle-orm";
+
+import App from "@/layouts/app.astro";
+import { PetLink } from "@/components/pet-link";
+import { Heading } from "@/components/ui/heading";
+import TaskCard from "@/components/task-card/index.astro";
+import { CreatePetTask } from "@/components/create-pet-task";
+
+const session = Astro.locals.session;
+
+if (!session) {
+  return Astro.redirect("/");
+}
+
+const pets = await db
+  .select()
+  .from(schema.pets)
+  .where(eq(schema.pets.userId, session.user.userId));
+
+if (!pets.length || pets.some((pet) => pet.creating)) {
+  return Astro.redirect("/pets/new");
+}
+
+const tasks = await db.query.tasks.findMany({
+  where: and(
+    eq(schema.tasks.userId, session.user.userId),
+    gte(schema.tasks.date, new Date().toISOString()),
+  ),
+  with: {
+    pet: true,
+  },
+  orderBy: (tasks, { asc }) => [asc(tasks.date)],
+});
+---
+
+<App title="Dashboard">
+  <ul class="flex space-x-2 items-center px-4 bg-muted border-b">
+    <p class="text-sm text-muted-foreground">My pets:</p>
+    {
+      pets.map((pet) => (
+        <li>
+          <PetLink pet={pet} client:idle />
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="py-8 container max-w-2xl">
+    <div class="sm:flex items-center">
+      <Heading
+        title="Tasks"
+        description="These are the upcoming tasks"
+        className="mb-8 sm:mb-0 sm:pr-2 sm:mr-auto"
+      />
+
+      <CreatePetTask pets={pets} client:idle />
+    </div>
+
+    <div class="space-y-4 mt-8">
+      {tasks.map((task) => <TaskCard task={task} />)}
+    </div>
+    {
+      !tasks.length && (
+        <div class="mt-12 text-center">
+          <p class="text-muted-foreground mb-4">No tasks found</p>
+        </div>
+      )
+    }
+  </div>
+</App>
