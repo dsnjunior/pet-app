@@ -26,6 +26,7 @@ export interface Props {
   };
 }
 
+const { lang, t } = Astro.locals;
 const { task } = Astro.props;
 ---
 
@@ -40,8 +41,13 @@ const { task } = Astro.props;
         task.date && (
           <li class="flex items-center text-sm font-semibold">
             <Calendar className="w-4 h-4 mr-2" />
-            <span class="sr-only">When: </span>
-            <TaskDate date={task.date} timeZone={task.timeZone} client:idle />
+            <span class="sr-only">{t("tasks.date")}: </span>
+            <TaskDate
+              date={task.date}
+              timeZone={task.timeZone}
+              locale={lang}
+              client:idle
+            />
           </li>
         )
       }
@@ -50,10 +56,10 @@ const { task } = Astro.props;
   <CardFooter>
     <a
       class={buttonVariants({ size: "sm", variant: "secondary" })}
-      href={`/pets/${task.pet.id}/tasks/${task.id}`}
+      href={Astro.locals.translatePath(`/pets/${task.pet.id}/tasks/${task.id}`)}
     >
       <Edit className="w-4 h-4 mr-2" />
-       Manage task
+      {t("tasks.edit")}
     </a>
   </CardFooter>
 </Card>

@@ -3,24 +3,28 @@ import { db, schema } from "@/lib/db";
 import { and, eq, gte } from "drizzle-orm";
 
 import App from "@/layouts/app.astro";
-import { PetLink } from "@/components/pet-link";
 import { Heading } from "@/components/ui/heading";
 import TaskCard from "@/components/task-card/index.astro";
-import { CreatePetTask } from "@/components/create-pet-task";
+import CreatePetTask from "@/components/create-pet-task";
 
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session) {
-  return Astro.redirect("/");
+  return Astro.redirect(Astro.locals.translatePath("/"));
 }
 
-const pets = await db
-  .select()
-  .from(schema.pets)
-  .where(eq(schema.pets.userId, session.user.userId));
+const pet = await db.query.pets.findFirst({
+  where: and(
+    eq(schema.pets.userId, session.user.userId),
+    eq(schema.pets.creating, false),
+  ),
+  columns: {
+    id: true,
+  },
+});
 
-if (!pets.length || pets.some((pet) => pet.creating)) {
-  return Astro.redirect("/pets/new");
+if (!pet) {
+  return Astro.redirect(Astro.locals.translatePath("/pets/new"));
 }
 
 const tasks = await db.query.tasks.findMany({
@@ -36,26 +40,14 @@ const tasks = await db.query.tasks.findMany({
 ---
 
 <App title="Dashboard">
-  <ul class="flex space-x-2 items-center px-4 bg-muted border-b">
-    <p class="text-sm text-muted-foreground">My pets:</p>
-    {
-      pets.map((pet) => (
-        <li>
-          <PetLink pet={pet} client:idle />
-        </li>
-      ))
-    }
-  </ul>
-
   <div class="py-8 container max-w-2xl">
     <div class="sm:flex items-center">
       <Heading
-        title="Tasks"
-        description="These are the upcoming tasks"
+        title={t("dashboard.title")}
+        description={t("dashboard.description")}
         className="mb-8 sm:mb-0 sm:pr-2 sm:mr-auto"
       />
-
-      <CreatePetTask pets={pets} client:idle />
+      <CreatePetTask />
     </div>
 
     <div class="space-y-4 mt-8">
@@ -64,7 +56,7 @@ const tasks = await db.query.tasks.findMany({
     {
       !tasks.length && (
         <div class="mt-12 text-center">
-          <p class="text-muted-foreground mb-4">No tasks found</p>
+          <p class="text-muted-foreground mb-4">{t("dashboard.empty")}</p>
         </div>
       )
     }

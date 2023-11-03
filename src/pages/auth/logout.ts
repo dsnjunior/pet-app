@@ -11,5 +11,5 @@ export const GET: APIRoute = async (context) => {
   }
   await auth.invalidateSession(session.sessionId);
   context.locals.auth.setSession(null);
-  return context.redirect("/", 302);
+  return context.redirect('/', 302);
 };

@@ -1,6 +1,6 @@
-export const TaskDate: React.FC<{ date: string; timeZone?: string }> = ({ date, timeZone }) => (
+export const TaskDate: React.FC<{ date: string; timeZone?: string, locale?: string }> = ({ date, timeZone, locale }) => (
   <>
-    {Intl.DateTimeFormat(undefined, {
+    {Intl.DateTimeFormat(locale, {
       dateStyle: "long",
       timeStyle: "short",
       hour12: false,

@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils";
 import Form from "./partials/form.astro";
 
 const { taskId, petId } = Astro.params;
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session || !taskId || !petId) {
-  return Astro.redirect("/");
+  return Astro.redirect(Astro.locals.translatePath("/"));
 }
 
 const [pet] = await db
@@ -26,7 +26,7 @@ const [pet] = await db
   );
 
 if (!pet) {
-  return Astro.redirect("/");
+  return Astro.redirect(Astro.locals.translatePath("/"));
 }
 
 if (Astro.request.method === "DELETE") {
@@ -43,8 +43,8 @@ if (Astro.request.method === "DELETE") {
   return new Response(null, {
     status: 200,
     headers: {
-      "HX-Redirect": `/pets/${pet.id}`,
-      Redirect: `/pets/${pet.id}`,
+      "HX-Redirect": Astro.locals.translatePath(`/pets/${pet.id}`),
+      Redirect: Astro.locals.translatePath(`/pets/${pet.id}`),
     },
   });
 }
@@ -54,35 +54,44 @@ if (Astro.request.method === "DELETE") {
   <div class="p-4 container">
     <div>
       <a
-        href={`/pets/${pet.id}`}
+        href={Astro.locals.translatePath(`/pets/${pet.id}`)}
         class={cn(
           buttonVariants({ size: "sm", variant: "link" }),
           "-ml-4 mb-4",
         )}
       >
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        <ArrowLeft className="w-4 h-4 mr-2" />
+        {t("back")}
       </a>
       <div class="flex justify-between">
         <Heading
-          title={`${pet.name}'s task`}
-          description={`Lets update the ${pet.name}'s task #${taskId.substring(
-            0,
-            8,
-          )}`}
+          title={t("tasks.form.title", {
+            name: pet.name,
+          })}
+          description={t("tasks.form.description", {
+            name: pet.name,
+            task: taskId.substring(0, 8),
+          })}
         />
         <div class="space-x-2">
           <Button
             variant="destructive"
             size="sm"
-            hx-delete={`/pets/${pet.id}/tasks/${taskId}`}
+            hx-delete={Astro.locals.translatePath(
+              `/pets/${pet.id}/tasks/${taskId}`,
+            )}
           >
-            <Trash className="w-4 h-4 mr-2" /> Delete task
+            <Trash className="w-4 h-4 mr-2" />
+            {t("tasks.delete")}
           </Button>
           <a
-            href={`/pets/${pet.id}/tasks/${taskId}/duplicate`}
+            href={Astro.locals.translatePath(
+              `/pets/${pet.id}/tasks/${taskId}/duplicate`,
+            )}
             class={buttonVariants({ variant: "outline", size: "sm" })}
           >
-            <Copy className="w-4 h-4 mr-2" /> Duplicate task
+            <Copy className="w-4 h-4 mr-2" />
+            {t("tasks.duplicate")}
           </a>
         </div>
       </div>

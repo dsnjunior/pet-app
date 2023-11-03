@@ -5,10 +5,10 @@ import { db, schema } from "@/lib/db";
 import { createId } from "@/lib/id";
 
 const { petId } = Astro.params;
-const session = Astro.locals.session;
+const { session, lang } = Astro.locals;
 
 if (!session || !petId) {
-  return Astro.redirect("/");
+  return Astro.redirect(Astro.locals.translatePath("/"));
 }
 
 const [pet] = await db
@@ -19,7 +19,7 @@ const [pet] = await db
   );
 
 if (!pet) {
-  return Astro.redirect("/");
+  return Astro.redirect(Astro.locals.translatePath("/"));
 }
 
 const [task] = await db
@@ -36,5 +36,7 @@ const [task] = await db
   })
   .returning();
 
-return Astro.redirect(`/pets/${petId}/tasks/${task.id}`);
+return Astro.redirect(
+  Astro.locals.translatePath(`/pets/${petId}/tasks/${task.id}`),
+);
 ---

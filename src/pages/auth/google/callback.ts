@@ -5,6 +5,7 @@ import { auth, googleAuth } from "@/lib/auth";
 
 export const GET: APIRoute = async (context) => {
   const storedState = context.cookies.get("google_oauth_state")?.value;
+  const lang = context.cookies.get("lang")?.value;
   const state = context.url.searchParams.get("state");
   const code = context.url.searchParams.get("code");
   if (!storedState || !state || storedState !== state || !code) {
@@ -35,7 +36,7 @@ export const GET: APIRoute = async (context) => {
       attributes: {},
     });
     context.locals.auth.setSession(session);
-    return context.redirect("/app", 302);
+    return context.redirect(`/${lang}/app`, 302);
   } catch (e) {
     if (e instanceof OAuthRequestError) {
       return new Response(null, {

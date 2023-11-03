@@ -1,19 +1,9 @@
 ---
-import Global from "@/layouts/global.astro";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+const acceptLanguage = Astro.request.headers.get("Accept-Language");
 
-const session = Astro.locals.session;
-
-if (session) {
-  return Astro.redirect("/app");
+if (acceptLanguage && acceptLanguage.startsWith("pt-BR")) {
+  return Astro.redirect("/pt-BR/");
 }
----
 
-<Global title="My Pet">
-  <div class="h-vh flex items-center justify-center">
-    <a href="/auth/google" class={cn(buttonVariants(), "mt-4")}>
-      Login with Google
-    </a>
-  </div>
-</Global>
+return Astro.redirect("/en/");
+---

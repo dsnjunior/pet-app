@@ -1,0 +1,42 @@
+---
+import { Image } from "astro:assets";
+
+import { languages } from "@/lib/i18n/ui";
+import { buttonVariants } from "@/components/ui/button";
+
+import ptBrFlag from "./flags/pt-BR.png";
+import enFlag from "./flags/en.png";
+
+const flags = {
+  "pt-BR": ptBrFlag,
+  en: enFlag,
+} as const;
+
+const currentPath = Astro.url.pathname.replace(`/${Astro.locals.lang}`, "");
+---
+
+<ul hx-boost="true">
+  {
+    Object.entries(languages)
+      .filter(([lang]) => lang !== Astro.locals.lang)
+      .map(([lang, label]) => (
+        <li>
+          <a
+            href={Astro.locals.translatePath(currentPath, lang)}
+            class={buttonVariants({ size: "sm", variant: "outline" })}
+          >
+            <Image
+              src={
+                // @ts-ignore
+                flags[lang]
+              }
+              alt={label}
+              width="16"
+              class="w-4 mr-2 inline-block object-contain"
+            />
+            {label}
+          </a>
+        </li>
+      ))
+  }
+</ul>
