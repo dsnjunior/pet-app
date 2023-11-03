@@ -7,14 +7,14 @@ import { Label } from "@/components/ui/label";
 
 export const partial = true;
 
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session) {
   return new Response(null, {
     status: 401,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -33,42 +33,44 @@ if (!creatingPets.length) {
   return new Response(null, {
     status: 404,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
 
-const petBirthday = Astro.request.headers.has("HX-Request")
-  ? (await Astro.request.formData()).get("birthday")
+const petName = Astro.request.headers.has("HX-Request")
+  ? (await Astro.request.formData()).get("name")
   : null;
 
 const [pet] = await (async () => {
   if (
-    petBirthday &&
-    typeof petBirthday === "string" &&
-    petBirthday.length > 0 &&
-    petBirthday.length <= 255
+    petName &&
+    typeof petName === "string" &&
+    petName.length > 0 &&
+    petName.length <= 255
   ) {
     return await db
       .update(schema.pets)
-      .set({ birthday: petBirthday })
+      .set({ name: petName })
       .where(eq(schema.pets.id, creatingPets[0].id))
       .returning();
   }
   return creatingPets;
 })();
 
-Astro.response.headers.set("HX-Replace-Url", "/pets/new/breed");
+Astro.response.headers.set(
+  "HX-Replace-Url",
+  Astro.locals.translatePath("/pets/new/birthday"),
+);
 ---
 
 <Label className="space-y-8">
-  <div class="font-semibold text-4xl">
-    Last thing before we start. What is {pet.name}'s breed?
+  <div class="font-semibold text-4xl max-w-2xl">
+    {t("pet.creation.birthday", { name: pet.name })}
   </div>
   <Input
-    hx-post="/pets/new/partials/finish"
-    placeholder={`${pet.name}'s breed`}
-    name="breed"
+    hx-post={Astro.locals.translatePath("/pets/new/partials/breed")}
+    name="birthday"
   />
 </Label>

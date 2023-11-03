@@ -1,0 +1,45 @@
+---
+import { eq, and } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+import { buttonVariants } from "@/components/ui/button";
+import { CreatePetTaskDialog } from "./create-pet-task-dialog";
+
+const { session, lang, t } = Astro.locals;
+
+if (!session) {
+  return null;
+}
+
+const pets = await db
+  .select()
+  .from(schema.pets)
+  .where(
+    and(
+      eq(schema.pets.userId, session.user.userId),
+      eq(schema.pets.creating, false),
+    ),
+  );
+---
+
+{
+  pets.length === 1 && (
+    <a
+      href={Astro.locals.translatePath(`/pets/${pets[0].id}/tasks/new`)}
+      class={buttonVariants()}
+    >
+      {t("tasks.create")}
+    </a>
+  )
+}
+{
+  pets.length > 1 && (
+    <CreatePetTaskDialog
+      pets={pets}
+      buttonLabel={t("tasks.create")}
+      dialogTitle={t("tasks.petSelector")}
+      lang={lang}
+      client:idle
+    />
+  )
+}

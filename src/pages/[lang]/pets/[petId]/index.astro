@@ -10,25 +10,24 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const { petId } = Astro.params;
+const { session, lang, t } = Astro.locals;
 
 if (!petId) {
   return new Response(null, {
     status: 400,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
-
-const session = Astro.locals.session;
 
 if (!session) {
   return new Response(null, {
     status: 401,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -44,8 +43,8 @@ if (!pet) {
   return new Response(null, {
     status: 404,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -56,22 +55,26 @@ if (!pet) {
     <div class="flex items-center">
       <Heading
         title={pet.name}
-        description={`Everithing we know about the ${pet.type} ${pet.name}`}
+        description={t("pet.description", {
+          name: pet.name,
+          type: t(`pet.type.${pet.type}`),
+        })}
       />
     </div>
     <ul class="py-4">
       <li>
-        <strong>Birthday:</strong>
+        <strong>{t("pet.birth")}:</strong>
         {pet.birthday}
       </li>
       <li>
-        <strong>Breed:</strong>
+        <strong>{t("pet.breed")}:</strong>
         {pet.breed}
       </li>
     </ul>
 
     <a href={`/pets/${pet.id}/tasks/new`} class={cn(buttonVariants(), "mb-4")}>
-      <Plus className="w-4 h-4 mr-2" /> Add activity
+      <Plus className="w-4 h-4 mr-2" />
+      {t("tasks.create")}
     </a>
 
     <PetHistory petId={petId} />

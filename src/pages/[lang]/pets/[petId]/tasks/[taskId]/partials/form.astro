@@ -13,6 +13,7 @@ import { db, schema } from "@/lib/db";
 export const partial = true;
 
 const { taskId, petId } = Astro.params;
+const { t } = Astro.locals;
 const userId = Astro.props.userId ?? Astro.locals.session?.user.userId;
 
 const formdata =
@@ -99,20 +100,22 @@ if (
 
 <form
   class="block m-0 py-4 space-y-4"
-  hx-post={`/pets/${petId}/tasks/${taskId}/partials/form`}
+  hx-post={Astro.locals.translatePath(
+    `/pets/${petId}/tasks/${taskId}/partials/form`,
+  )}
   hx-indicator="#indicator"
   hx-on="htmx:configRequest: event.detail.parameters.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone"
   hx-swap="outerHTML"
 >
   <Label>
-    <span class="mb-1 block">Description</span>
+    <span class="mb-1 block">{t("tasks.description")}</span>
     <Input name="description" defaultValue={task.description ?? ""} />
     {/* @todo display error message */}
   </Label>
 
   <div class="grid grid-cols-2 gap-4">
     <Label>
-      <span class="mb-1 block">Type</span>
+      <span class="mb-1 block">{t("tasks.type")}</span>
       <select name="type" class={inputClasses}>
         {
           types.map((typeFromList) => (
@@ -122,9 +125,10 @@ if (
           ))
         }
       </select>
+      {/* @todo display error message */}
     </Label>
     <Label>
-      <span class="mb-1 block">Status</span>
+      <span class="mb-1 block">{t("tasks.status")}</span>
       <select name="status" class={inputClasses}>
         {
           statuses.map((statusFromList) => (
@@ -137,11 +141,12 @@ if (
           ))
         }
       </select>
+      {/* @todo display error message */}
     </Label>
   </div>
 
   <Label className="relative block" id="date">
-    <span class="mb-1 block">When</span>
+    <span class="mb-1 block">{t("tasks.date")}</span>
     <Input
       name="date"
       type="datetime-local"
@@ -151,9 +156,12 @@ if (
   </Label>
 
   <div class="flex items-center">
-    <Button><Check className="w-4 h-4 mr-2" /> Done</Button>
+    <Button>
+      <Check className="w-4 h-4 mr-2" />
+      {t("save")}
+    </Button>
     <RotateCcw
-      className="htmx-indicator animate-spin h-4 w-4 bg-white rounded-full ml-4"
+      className="htmx-indicator animate-spin h-4 w-4 rounded-full ml-4"
       id="indicator"
     />
   </div>

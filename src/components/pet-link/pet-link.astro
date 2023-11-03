@@ -1,0 +1,39 @@
+---
+import { and, eq } from "drizzle-orm";
+
+import { db, schema } from "@/lib/db";
+
+import { PetLinkCard } from "./pet-link-card";
+
+export interface Props {
+  petId: string;
+}
+
+const petId = Astro.props.petId;
+const { t, session } = Astro.locals;
+
+if (!session) {
+  return null;
+}
+
+const pet = await db.query.pets.findFirst({
+  where: and(
+    eq(schema.pets.userId, session.user.userId),
+    eq(schema.pets.id, petId),
+  ),
+});
+
+if (!pet) {
+  return null;
+}
+
+const petType = t(`pet.type.${pet.type}`);
+---
+
+<PetLinkCard
+  petName={pet.name}
+  birthday={`${t("pet.bornOn")} ${pet.birthday}`}
+  url={Astro.locals.translatePath(`/pets/${pet.id}`)}
+  description={`${petType} ${pet.name}`}
+  client:idle
+/>

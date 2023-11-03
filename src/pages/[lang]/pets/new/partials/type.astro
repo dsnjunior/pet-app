@@ -8,7 +8,7 @@ import { createId } from "@/lib/id";
 
 export const partial = true;
 
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session) {
   return Astro.redirect("/");
@@ -38,24 +38,36 @@ if (!alreadyCreatedPets?.length) {
 }
 ---
 
-<h1 class="font-semibold text-4xl">What kind of animal is your pet?</h1>
+<h1 class="font-semibold text-4xl">{t("pet.creation.type")}</h1>
 <div class="space-y-4 flex flex-col">
   <form>
     <input type="hidden" name="type" value="dog" />
-    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
-      🐶 Dog
+    <Button
+      className="text-lg w-36"
+      hx-post={Astro.locals.translatePath("/pets/new/partials/name")}
+    >
+      {t("pet.emoji.dog")}{" "}
+      {t("pet.type.dog")}
     </Button>
   </form>
   <form>
     <input type="hidden" name="type" value="cat" />
-    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
-      😺 Cat
+    <Button
+      className="text-lg w-36"
+      hx-post={Astro.locals.translatePath("/pets/new/partials/name")}
+    >
+      {t("pet.emoji.cat")}{" "}
+      {t("pet.type.cat")}
     </Button>
   </form>
   <form>
     <input type="hidden" name="type" value="bird" />
-    <Button className="text-lg w-32" hx-post="/pets/new/partials/name">
-      🐦 Bird
+    <Button
+      className="text-lg w-36"
+      hx-post={Astro.locals.translatePath("/pets/new/partials/name")}
+    >
+      {t("pet.emoji.bird")}{" "}
+      {t("pet.type.bird")}
     </Button>
   </form>
 </div>

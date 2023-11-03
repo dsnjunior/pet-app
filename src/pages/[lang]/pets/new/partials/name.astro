@@ -7,14 +7,14 @@ import { Label } from "@/components/ui/label";
 
 export const partial = true;
 
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session) {
   return new Response(null, {
     status: 401,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -33,8 +33,8 @@ if (!creatingPets.length) {
   return new Response(null, {
     status: 404,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -58,16 +58,23 @@ const [pet] = await (async () => {
   return creatingPets;
 })();
 
-Astro.response.headers.set("HX-Replace-Url", "/pets/new/name");
+Astro.response.headers.set(
+  "HX-Replace-Url",
+  Astro.locals.translatePath("/pets/new/name"),
+);
 ---
 
 <Label className="space-y-8">
   <div class="font-semibold text-4xl">
-    Cool! What is the name of the {pet.type}?
+    {
+      t("pet.creation.name", {
+        type: t(`pet.type.${pet.type}`),
+        emoji: t(`pet.emoji.${pet.type}`),
+      })
+    }
   </div>
   <Input
-    hx-post="/pets/new/partials/birthday"
-    placeholder={`${pet.type}'s name`}
+    hx-post={Astro.locals.translatePath("/pets/new/partials/birthday")}
     name="name"
   />
 </Label>

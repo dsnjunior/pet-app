@@ -12,5 +12,12 @@ export const GET: APIRoute = async (context) => {
     maxAge: 60 * 60,
   });
 
+  context.cookies.set('lang', context.locals.lang, {
+    httpOnly: true,
+    secure: !import.meta.env.DEV,
+    path: "/",
+    maxAge: 60 * 60,
+  })
+
   return context.redirect(url.toString(), 302);
 };

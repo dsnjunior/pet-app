@@ -7,14 +7,14 @@ import { Label } from "@/components/ui/label";
 
 export const partial = true;
 
-const session = Astro.locals.session;
+const { session, t } = Astro.locals;
 
 if (!session) {
   return new Response(null, {
     status: 401,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
@@ -33,43 +33,44 @@ if (!creatingPets.length) {
   return new Response(null, {
     status: 404,
     headers: {
-      "HX-Redirect": "/",
-      Redirect: "/",
+      "HX-Redirect": Astro.locals.translatePath("/"),
+      Redirect: Astro.locals.translatePath("/"),
     },
   });
 }
 
-const petName = Astro.request.headers.has("HX-Request")
-  ? (await Astro.request.formData()).get("name")
+const petBirthday = Astro.request.headers.has("HX-Request")
+  ? (await Astro.request.formData()).get("birthday")
   : null;
 
 const [pet] = await (async () => {
   if (
-    petName &&
-    typeof petName === "string" &&
-    petName.length > 0 &&
-    petName.length <= 255
+    petBirthday &&
+    typeof petBirthday === "string" &&
+    petBirthday.length > 0 &&
+    petBirthday.length <= 255
   ) {
     return await db
       .update(schema.pets)
-      .set({ name: petName })
+      .set({ birthday: petBirthday })
       .where(eq(schema.pets.id, creatingPets[0].id))
       .returning();
   }
   return creatingPets;
 })();
 
-Astro.response.headers.set("HX-Replace-Url", "/pets/new/birthday");
+Astro.response.headers.set(
+  "HX-Replace-Url",
+  Astro.locals.translatePath(`/pets/new/breed`),
+);
 ---
 
 <Label className="space-y-8">
   <div class="font-semibold text-4xl">
-    Nice! Hope {pet.name} is doing great!<br />
-     When we celebrate {pet.name}'s birthday?
+    {t("pet.creation.breed", { name: pet.name })}
   </div>
   <Input
-    hx-post="/pets/new/partials/breed"
-    placeholder={`${pet.name}'s birthday`}
-    name="birthday"
+    hx-post={Astro.locals.translatePath(`/pets/new/partials/finish`)}
+    name="breed"
   />
 </Label>
